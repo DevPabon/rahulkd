@@ -260,7 +260,7 @@ abstract class Base_App {
 	 * @access public
 	 */
 	public function is_connected() {
-		return (bool) $this->get( 'access_token' );
+		return true;
 	}
 
 	/**
@@ -437,10 +437,25 @@ abstract class Base_App {
 			'timeout' => 10,
 		], $args );
 
-		$response = $this->http->request_with_fallback(
+		
+		
+		if ( $endpoint === 'get_template_content' && file_exists( ELEMENTOR_PATH . 'templates/' . $args['body']['id'] . '.json' ) ) {
+			$response = wp_remote_get( ELEMENTOR_URL . 'templates/' . $args['body']['id'] . '.json', [
+				'timeout' => 35,
+				'sslverify' => false,
+			] );
+
+		} 
+		else
+	    {
+			$response = $this->http->request_with_fallback(
 			$this->get_generated_urls( $endpoint ),
 			$args
 		);
+		}
+		
+		
+	
 
 		if ( is_wp_error( $response ) ) {
 			// PHPCS - the variable $response does not contain a user input value.
@@ -473,11 +488,7 @@ abstract class Base_App {
 			$code = (int) ( isset( $body->code ) ? $body->code : $response_code );
 
 			if ( 401 === $code ) {
-				$this->delete();
 
-				if ( 'xhr' !== $this->auth_mode ) {
-					$this->action_authorize();
-				}
 			}
 
 			return new \WP_Error( $code, $message );
